@@ -1,0 +1,1 @@
+{"main":"index.js","type":"module","dependencies":{"@mirror-protocol/mirror.js":"^1.1.8","@terra-money/terra.js":"^1.8.3","dotenv":"^10.0.0"}}
