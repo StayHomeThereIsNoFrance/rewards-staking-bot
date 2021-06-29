@@ -1,51 +1,105 @@
 import { LCDClient, MnemonicKey, RawKey } from '@terra-money/terra.js';
 import { Mirror } from '@mirror-protocol/mirror.js';
+import { Anchor, columbus4, AddressProviderFromJson, MARKET_DENOMS, fabricateMarketClaimRewards, fabricateTerraswapSwapANC, queryMarketBorrowerInfo } from '@anchor-protocol/anchor.js'
+import { queryTerraswapSimulation } from '@anchor-protocol/anchor.js/dist/queries/terraswap/simulation.js'
 
 (await import('dotenv')).config()
 
-console.log(process.env.MNEMONIC);
-// default -- uses Columbus-4 core contract addresses
-const mirror = new Mirror({
-                            lcd: new LCDClient({URL: 'https://lcd.terra.dev', chainID: 'columbus-4'}), 
-                            key: new MnemonicKey({mnemonic: process.env.MNEMONIC})
-                          });
-const wallet = mirror.lcd.wallet(mirror.key);
+const lcd = new LCDClient({URL: 'https://lcd.terra.dev', chainID: 'columbus-4'});
+const key = new MnemonicKey({mnemonic: process.env.MNEMONIC});
+const wallet = lcd.wallet(key);
+
+const mirror = new Mirror({ lcd: lcd, key: key});
+
+const addressProvider = new AddressProviderFromJson(columbus4);
+const anchor = new Anchor(lcd, addressProvider);
+
+const ancContractAddress = 'terra14z56l0fp2lsf86zy3hty2z47ezkhnthtr9yq76';
+
+const terraswapANCPairContractAddress = 'terra1gm5p3ner9x9xpwugn9sp6gvhd0lwrtkyrecdn3';
 
 console.dir(wallet.key.accAddress)
 
 
-async function main() {
-  const result = await mirror.staking.getRewardInfo(wallet.key.accAddress);
-  // console.dir(result, { depth: null, colors: true });
+async function getClaimAndStakeMirrorMsgs() {
+  const rewards = await mirror.staking.getRewardInfo(key.accAddress);
 
-  // const token = result.reward_infos[0];
-  // const poolInfo = await mirror.staking.getPoolInfo(token.asset_token);
-  // console.dir(poolInfo, { depth: null, colors: true });
+  console.dir(rewards.reward_infos, { depth: null, colors: true });
 
-  const rewards = await Promise.all(result.reward_infos.map(async(token) => {
-    const poolInfo = await mirror.staking.getPoolInfo(token.asset_token);
-    token.reward = (Number(poolInfo.reward_index) - Number(token.index)) * Number(token.bond_amount) + Number(token.pending_reward);
-    return token;
-  }));
-
-  console.dir(rewards, { depth: null, colors: true });
-
-  const totalRewards = rewards.reduce((carry, item) => carry+= item.reward, 0);
+  const totalRewards = rewards.reward_infos.reduce((carry, item) => carry += Number(item.pending_reward), 0);
   console.dir(totalRewards, { depth: null, colors: true });
 
   const mirrorToken = mirror.assets['MIR'];
-  // console.dir(mirror.assets['MIR'], { depth: null, colors: true });
-
  
+  return [mirror.staking.withdraw(), mirror.gov.stakeVotingTokens(mirrorToken.token, totalRewards)];
+}
+
+async function getClaimAndSellAnchorMsgs() {
+
+  const info = await queryMarketBorrowerInfo({lcd: lcd, market: 'usd', borrower: key.accAddress})(addressProvider);
+  console.dir(info, { depth: null, colors: true });
+
+  
+  const simulation = await lcd.wasm.contractQuery(terraswapANCPairContractAddress, {
+    simulation: {
+        offer_asset: {
+            info: {
+                token: {
+                    contract_addr: ancContractAddress,
+                },
+            },
+            amount: '1000000',
+        },
+    },
+  });
+  
+  
+  console.dir(simulation, { depth: null, colors: true });
+
+  // process.exit();
+
+
+  const claimRewardsMsg = fabricateMarketClaimRewards({
+    address: key.accAddress,
+    market: 'usd',
+    to: key.accAddress,
+
+  })(addressProvider);
+
+  const sellANCMsg = fabricateTerraswapSwapANC({
+    address: key.accAddress,
+    amount: 5,
+    to: key.accAddress
+  })(addressProvider);
+
+  return [].concat(claimRewardsMsg, sellANCMsg);
+}
+
+
+async function main() {
+
+  let msgs = [];
+
+  const mirrorMsgs = await getClaimAndStakeMirrorMsgs();
+  msgs = msgs.concat(mirrorMsgs);
+  // console.dir(msgs, { depth: null, colors: true });
+
+  const anchorMsgs = await getClaimAndSellAnchorMsgs();
+  msgs = msgs.concat(anchorMsgs);
+
+  console.dir(msgs, { depth: null, colors: true });
+  // process.exit();
+
   const tx = await wallet.createAndSignTx({
-    msgs: [mirror.staking.withdraw(), mirror.gov.stakeVotingTokens(mirrorToken.token, totalRewards)],
+    msgs: msgs,
     gasPrices: '0.15uusd',
-    gasAdjustment: 1.2
+    gasAdjustment: 1.25
   });
 
-  console.dir(tx, { depth: null, colors: true });
-  const wresult = await mirror.lcd.tx.broadcast(tx);
-  console.dir(wresult, { depth: null, colors: true });
+  // console.dir(tx, { depth: null, colors: true });
+
+  const result = await lcd.tx.broadcast(tx);
+  console.dir(result, { depth: null, colors: true });
 }
 
 main().catch(console.error);
