@@ -35,26 +35,34 @@ async function getClaimAndStakeMirrorMsgs() {
 }
 
 async function getClaimAndSellAnchorMsgs() {
-
-  const info = await queryMarketBorrowerInfo({lcd: lcd, market: 'usd', borrower: key.accAddress})(addressProvider);
+  
+  const blockInfo = await lcd.tendermint.blockInfo();
+  const info = await queryMarketBorrowerInfo(
+    {
+      lcd: lcd, 
+      market: 'usd', 
+      borrower: key.accAddress, 
+      block_height: Number(blockInfo.block.header.height)
+    })(addressProvider);
+  
   console.dir(info, { depth: null, colors: true });
-
+  // process.exit()
   
-  const simulation = await lcd.wasm.contractQuery(terraswapANCPairContractAddress, {
-    simulation: {
-        offer_asset: {
-            info: {
-                token: {
-                    contract_addr: ancContractAddress,
-                },
-            },
-            amount: '1000000',
-        },
-    },
-  });
+  // const simulation = await lcd.wasm.contractQuery(terraswapANCPairContractAddress, {
+  //   simulation: {
+  //       offer_asset: {
+  //           info: {
+  //               token: {
+  //                   contract_addr: ancContractAddress,
+  //               },
+  //           },
+  //           amount: '1000000',
+  //       },
+  //   },
+  // });
   
   
-  console.dir(simulation, { depth: null, colors: true });
+  // console.dir(simulation, { depth: null, colors: true });
 
   // process.exit();
 
@@ -68,7 +76,7 @@ async function getClaimAndSellAnchorMsgs() {
 
   const sellANCMsg = fabricateTerraswapSwapANC({
     address: key.accAddress,
-    amount: 5,
+    amount: Math.trunc(info.pending_rewards) / 1000000,
     to: key.accAddress
   })(addressProvider);
 
