@@ -21,7 +21,7 @@ const terraswapANCPairContractAddress = 'terra1gm5p3ner9x9xpwugn9sp6gvhd0lwrtkyr
 console.dir(wallet.key.accAddress)
 
 
-async function getClaimAndStakeMirrorMsgs() {
+async function getClaimAndStakeMirrorMsgs(stakeOrSell) {
   const rewards = await mirror.staking.getRewardInfo(key.accAddress);
 
   console.dir(rewards.reward_infos, { depth: null, colors: true });
@@ -30,8 +30,15 @@ async function getClaimAndStakeMirrorMsgs() {
   console.dir(totalRewards, { depth: null, colors: true });
 
   const mirrorToken = mirror.assets['MIR'];
+
+
+  if(stakeOrSell == 'stake') {
+    return [mirror.staking.withdraw(), mirror.gov.stakeVotingTokens(mirrorToken.token, totalRewards), mirror.gov.stakeVotingRewards()];
+  }
+  else {
+    return [mirror.staking.withdraw(), mirror.gov.withdrawVotingRewards()];
+  }
  
-  return [mirror.staking.withdraw(), mirror.gov.stakeVotingTokens(mirrorToken.token, totalRewards)];
 }
 
 async function getClaimAndSellAnchorMsgs() {
@@ -88,7 +95,7 @@ async function main() {
 
   let msgs = [];
 
-  const mirrorMsgs = await getClaimAndStakeMirrorMsgs();
+  const mirrorMsgs = await getClaimAndStakeMirrorMsgs('stake');
   msgs = msgs.concat(mirrorMsgs);
   // console.dir(msgs, { depth: null, colors: true });
 
