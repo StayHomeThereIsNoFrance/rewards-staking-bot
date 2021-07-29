@@ -53,26 +53,6 @@ async function getClaimAndSellAnchorMsgs() {
     })(addressProvider);
   
   console.dir(info, { depth: null, colors: true });
-  // process.exit()
-  
-  // const simulation = await lcd.wasm.contractQuery(terraswapANCPairContractAddress, {
-  //   simulation: {
-  //       offer_asset: {
-  //           info: {
-  //               token: {
-  //                   contract_addr: ancContractAddress,
-  //               },
-  //           },
-  //           amount: '1000000',
-  //       },
-  //   },
-  // });
-  
-  
-  // console.dir(simulation, { depth: null, colors: true });
-
-  // process.exit();
-
 
   const claimRewardsMsg = fabricateMarketClaimRewards({
     address: key.accAddress,
@@ -97,21 +77,17 @@ async function main() {
 
   const mirrorMsgs = await getClaimAndStakeMirrorMsgs('stake');
   msgs = msgs.concat(mirrorMsgs);
-  // console.dir(msgs, { depth: null, colors: true });
 
   const anchorMsgs = await getClaimAndSellAnchorMsgs();
   msgs = msgs.concat(anchorMsgs);
 
   console.dir(msgs, { depth: null, colors: true });
-  // process.exit();
 
   const tx = await wallet.createAndSignTx({
     msgs: msgs,
     gasPrices: '0.15uusd',
     gasAdjustment: 1.25
   });
-
-  // console.dir(tx, { depth: null, colors: true });
 
   const result = await lcd.tx.broadcast(tx);
   console.dir(result, { depth: null, colors: true });

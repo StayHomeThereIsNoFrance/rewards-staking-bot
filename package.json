@@ -1,1 +1,10 @@
-{"main":"index.js","type":"module","dependencies":{"@anchor-protocol/anchor.js":"^1.0.2","@mirror-protocol/mirror.js":"^2.0.0","@terra-money/terra.js":"^1.8.4","dotenv":"^10.0.0"}}
+{
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "@anchor-protocol/anchor.js": "^1.0.2",
+    "@mirror-protocol/mirror.js": "^2.0.0",
+    "@terra-money/terra.js": "^1.8.4",
+    "dotenv": "^10.0.0"
+  }
+}
