@@ -3,8 +3,10 @@
   "type": "module",
   "dependencies": {
     "@anchor-protocol/anchor.js": "^1.0.2",
-    "@mirror-protocol/mirror.js": "^2.0.0",
-    "@terra-money/terra.js": "^1.8.4",
-    "dotenv": "^10.0.0"
+    "@mirror-protocol/mirror.js": "^2.0.1",
+    "@terra-money/terra.js": "^2.0.14",
+    "cd": "^0.3.3",
+    "dotenv": "^10.0.0",
+    "lodash": "^4.17.21"
   }
 }
