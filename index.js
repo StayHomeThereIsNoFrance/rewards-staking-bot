@@ -63,10 +63,11 @@ async function getClaimAndStakeMirrorMsgs(stakeOrSell) {
 
   const votingInfo = await mirror.gov.getStaker(key.accAddress);
   const votingRewards = votingInfo.pending_voting_rewards;
+  console.dir(votingRewards, { depth: null, colors: true });
 
   const totalRewards = Math.floor(Number(stakingRewards) + Number(votingRewards));
-
-  console.dir(votingInfo, { depth: null, colors: true });
+  console.dir(totalRewards, { depth: null, colors: true });
+  
   
 
   const mirrorToken = mirror.assets['MIR'];
@@ -114,7 +115,7 @@ async function getClaimAndStakeMirrorMsgs(stakeOrSell) {
       msgs = msgs.concat(mirror.gov.stakeVotingRewards())
     }
 
-    return [...msgs, ...[mirror.gov.stakeVotingTokens(mirrorToken.token, totalRewards)]]
+    return [...msgs, ...[mirror.gov.stakeVotingTokens(mirrorToken.token, stakingRewards)]]
     
   }
   else {
@@ -219,8 +220,8 @@ async function main() {
 
   // const unstakeMsgs = await getUnstakeMirrorMsgs();
   // msgs = msgs.concat(unstakeMsgs);
-  // const mirrorMsgs = await getClaimAndStakeMirrorMsgs('stake');
-  // msgs = msgs.concat(mirrorMsgs);
+  const mirrorMsgs = await getClaimAndStakeMirrorMsgs('stake');
+  msgs = msgs.concat(mirrorMsgs);
 
   const anchorMsgs = await getClaimAndSellAnchorMsgs('provide');
   msgs = msgs.concat(anchorMsgs);
